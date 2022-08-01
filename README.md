@@ -2,14 +2,15 @@
 
 Flix wrapper over Java's `java.lang.Process` library. 
 
-Split off from Flix-Sandbox.
+License: Apache 2.0
 
-
-Dependencies: 
+## Dependencies: 
 
 https://github.com/stephentetley/interop-collections
 
 https://github.com/stephentetley/interop-charset-locale
 
 https://github.com/stephentetley/interop-filepath
+
+https://github.com/stephentetley/monad-lib
 
