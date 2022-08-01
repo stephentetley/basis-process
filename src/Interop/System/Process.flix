@@ -33,7 +33,7 @@ namespace Interop/System/Process {
 
 
     pub def processBuilder(cmd: String, args: List[String]): ProcessBuilder[r, ka, Unit] \ Write(r) =
-        Interop/System/ProcessBuilder.command(cmd, args)
+        Interop/System/ProcessBuilder.command!(cmd, args)
 
 
     pub def waitFor(p: Process): Result[Int32, String] & Impure =

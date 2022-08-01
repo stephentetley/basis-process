@@ -17,15 +17,6 @@
 
 namespace Interop/System {
 
-
-    ///
-    /// Reader (without local) and Error monad in codensity style to be stack safe.
-    /// 
-    /// `ka` is the continuation answer type
-    ///
-    /// pub enum ProcessBuilder[r: Region, ka: Type, a: Type](
-    ///     ##java.lang.ProcessBuilder -> (a -> Result[ka, String] & r) -> Result[ka, String] & r)
-
     pub enum ProcessBuilder[r: Region, ka: Type, a: Type](MonadLib.Builder[r, ka, ##java.lang.ProcessBuilder, a])
 
     instance Functor[ProcessBuilder[r, ka]] {
@@ -124,13 +115,13 @@ namespace Interop/System/ProcessBuilder {
     /// API...
 
 
-    pub def command(cmd: String, args: List[String]): ProcessBuilder[r, ka, Unit] \ Write(r) =
+    pub def command!(cmd: String, args: List[String]): ProcessBuilder[r, ka, Unit] \ Write(r) =
         import java.lang.ProcessBuilder.command(##java.util.List): ##java.lang.ProcessBuilder & r;
         let strs = Interop/Collections/RawList.fromListViaArrayList(() as Region[r], cmd :: args);
         liftSetter(pb -> command(pb, Interop/Collections/RawList.getRawList(strs)))
 
 
-    pub def setDirectory(p: FilePath): ProcessBuilder[r, ka, Unit] \ Write(r) = 
+    pub def setDirectory!(p: FilePath): ProcessBuilder[r, ka, Unit] \ Write(r) = 
         import java.lang.ProcessBuilder.directory(##java.io.File): ##java.lang.ProcessBuilder & r;
         import new java.io.File(String): ##java.io.File & r as newFile;
         let fn = pb -> {
