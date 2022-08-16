@@ -1,16 +1,8 @@
 # basis-process
 
-Flix wrapper over Java's `java.lang.Process` library. 
+Defunct
 
-License: Apache 2.0
+Code moved to: 
 
-## Dependencies: 
-
-https://github.com/stephentetley/basis-filepath
-
-https://github.com/stephentetley/basis-charset-locale
-
-https://github.com/stephentetley/interop-base
-
-https://github.com/stephentetley/monad-lib
+https://github.com/stephentetley/basis-base
 
