@@ -15,75 +15,50 @@
  */
 
 
-namespace Interop/System {
+namespace Basis/System {
 
-    pub enum Process(##java.lang.Process)
+    pub enum Process[r: Region](Interop/Lang.Process[r])
 }
 
 
-namespace Interop/System/Process {
+namespace Basis/System/Process {
     
-    use Interop/Text.Charset;
-    use Interop/Text.Charset.{Charset};
+    use Basis/Text.Charset;
+    use Basis/Text.Charset.{Charset};
 
-    use Interop/System.Process;
-    use Interop/System.Process.{Process};
-    use Interop/System.ProcessBuilder;
-    use Interop/System.ProcessBuilder.{ProcessBuilder};
+    use Basis/System.Process;
+    use Basis/System.Process.{Process};
+    use Basis/System.ProcessBuilder;
+    use Basis/System.ProcessBuilder.{ProcessBuilder};
 
 
     pub def processBuilder(cmd: String, args: List[String]): ProcessBuilder[r, ka, Unit] \ Write(r) =
-        Interop/System/ProcessBuilder.command!(cmd, args)
+        Basis/System/ProcessBuilder.command!(cmd, args)
 
 
-    pub def waitFor(p: Process): Result[Int32, String] & Impure =
-        import java.lang.Process.waitFor(): Int32 & Impure;
-        try {
-            let Process(p1) = p;
-            let retcode = waitFor(p1);
-            Ok(retcode)
-        } catch {
-            case ex: ##java.lang.Exception =>
-                import java.lang.Throwable.getMessage(): String & Impure;
-                Err(getMessage(ex))
-        }
+    pub def waitFor(p: Process[r]): Result[Int32, String] \ IO =
+        use Result.flatMap;
+        let Process(p1) = p;
+        Interop/Lang/Process.waitFor!(p1)
 
 
-    pub def getInput(cs: Charset, p: Process): Result[String, String] & Impure =
-        import java.lang.Process.getInputStream(): ##java.io.InputStream & Impure;
-        import java.io.InputStream.readAllBytes(): Array[Int8, Static] & Impure;
-        import new java.lang.String(Array[Int8, Static], ##java.nio.charset.Charset): String & Impure as newString;
-        try {
-            let Process(p1) = p;
-            let Charset(cs1) = cs;
-            let strm = getInputStream(p1);
-            let bytes = readAllBytes(strm);
-            let s1 = newString(bytes, cs1);
-            Ok(s1)
-        } catch {
-            case ex: ##java.lang.Exception =>
-                import java.lang.Throwable.getMessage(): String & Impure;
-                Err(getMessage(ex))
-        }
+    pub def getInput(cs: Charset, p: Process[r]): Result[String, String] & Impure =
+        use Result.flatMap;
+        let Process(p1) = p;
+        let Charset(cs1) = cs;
+        let strm    = Interop/Lang/Process.getInputStream(p1);
+        let* bytes  = Interop/IO/InputStream.readAllBytes(strm);
+        Ok(Interop/Lang/String.fromArrayWithCharset(cs1, bytes))
 
 
-    pub def getError(cs: Charset, p: Process): Result[String, String] & Impure =        
-        import java.lang.Process.getErrorStream(): ##java.io.InputStream & Impure;
-        import java.io.InputStream.readAllBytes(): Array[Int8, Static] & Impure;
-        import new java.lang.String(Array[Int8, Static], ##java.nio.charset.Charset): String & Impure as newString;
-        try {
-            let Process(p1) = p;
-            let Charset(cs1) = cs;
-            let strm = getErrorStream(p1);
-            let bytes = readAllBytes(strm);
-            let s1 = newString(bytes, cs1);
-            Ok(s1)
-        } catch {
-            case ex: ##java.lang.Exception =>
-                import java.lang.Throwable.getMessage(): String & Impure;
-                Err(getMessage(ex))
-        }
-
+    pub def getError(cs: Charset, p: Process[r]): Result[String, String] & Impure =        
+        use Result.flatMap;
+        let Process(p1) = p;
+        let Charset(cs1) = cs;
+        let strm    = Interop/Lang/Process.getErrorStream(p1);
+        let* bytes  = Interop/IO/InputStream.readAllBytes(strm);
+        Ok(Interop/Lang/String.fromArrayWithCharset(cs1, bytes))
+        
 
 
     pub type alias ProcessArgs =
@@ -97,7 +72,7 @@ namespace Interop/System/Process {
         use Result.flatMap;
         region r1 {
             let pb          = processBuilder(args.cmd, args.args);
-            let* proc       = Interop/System/ProcessBuilder.start(r1, pb);
+            let* proc       = Basis/System/ProcessBuilder.start(r1, pb);
             let* respGood   = getInput(args.charset, proc);
             let* respBad    = getError(args.charset, proc);
             let* code       = waitFor(proc);
@@ -109,7 +84,7 @@ namespace Interop/System/Process {
         use Result.flatMap;
         region r1 {
             let pb          = processBuilder(args.cmd, args.args);
-            let* proc       = Interop/System/ProcessBuilder.start(r1, pb);
+            let* proc       = Basis/System/ProcessBuilder.start(r1, pb);
             let* respGood   = getInput(args.charset, proc);
             let* respBad    = getError(args.charset, proc);
             let* code       = waitFor(proc);

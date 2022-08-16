@@ -15,43 +15,45 @@
  */
 
 
-namespace Interop/System {
+namespace Basis/System {
 
-    pub enum ProcessBuilder[r: Region, ka: Type, a: Type](MonadLib.Builder[r, ka, ##java.lang.ProcessBuilder, a])
+    pub enum ProcessBuilder[r: Region, ka: Type, a: Type](MonadLib.Builder[r, ka, Interop/Lang.ProcessBuilder[r], a])
 
     instance Functor[ProcessBuilder[r, ka]] {
         pub def map(f: a -> b & ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef = 
-            Interop/System/ProcessBuilder.map(f, ma)
+            Basis/System/ProcessBuilder.map(f, ma)
     }
 
     instance Applicative[ProcessBuilder[r, ka]] {
         pub def point(x: a): ProcessBuilder[r, ka, a] =  
-            Interop/System/ProcessBuilder.point(x)
+            Basis/System/ProcessBuilder.point(x)
 
         pub def ap(mf: ProcessBuilder[r, ka, a -> b & ef], ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
-            Interop/System/ProcessBuilder.ap(mf, ma)
+            Basis/System/ProcessBuilder.ap(mf, ma)
     }
 
     instance Monad[ProcessBuilder[r, ka]] {
         pub def flatMap(f: a -> ProcessBuilder[r, ka, b] & ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
-            Interop/System/ProcessBuilder.flatMap(f, ma)
+            Basis/System/ProcessBuilder.flatMap(f, ma)
     }
 
 }
 
 
-namespace Interop/System/ProcessBuilder {
+namespace Basis/System/ProcessBuilder {
 
-    use Interop/System.ProcessBuilder;
-    use Interop/System.ProcessBuilder.{ProcessBuilder};
+    use Monad.{>>=};
 
-    use Interop/System.FilePath;
-    use Interop/System.FilePath.{FilePath};
-    use Interop/System.Process;
-    use Interop/System.Process.{Process};
+    use Basis/System.ProcessBuilder;
+    use Basis/System.ProcessBuilder.{ProcessBuilder};
+
+    use Basis/System.FilePath;
+    use Basis/System.FilePath.{FilePath};
+    use Basis/System.Process;
+    use Basis/System.Process.{Process};
 
 
-    pub def getProcessBuilder(x: ProcessBuilder[r, ka, a]): MonadLib.Builder[r, ka, ##java.lang.ProcessBuilder, a] = 
+    pub def getProcessBuilder(x: ProcessBuilder[r, ka, a]): MonadLib.Builder[r, ka, Interop/Lang.ProcessBuilder[r], a] = 
         let ProcessBuilder(x1) = x;
         x1
 
@@ -80,35 +82,34 @@ namespace Interop/System/ProcessBuilder {
     pub def throwError(msg: String): ProcessBuilder[r, ka, a] =
         ProcessBuilder(MonadLib/Builder.throwError(msg))
 
-    pub def liftSetter(f: ##java.lang.ProcessBuilder -> ##java.lang.ProcessBuilder & ef): ProcessBuilder[r, ka, Unit] & ef =
+    def liftSetter(f: Interop/Lang.ProcessBuilder[r] -> Interop/Lang.ProcessBuilder[r] \ ef): ProcessBuilder[r, ka, Unit] \ ef =
         ProcessBuilder(MonadLib/Builder.liftSetter(f))
 
-    pub def liftGetter(f: ##java.lang.ProcessBuilder -> a & ef): ProcessBuilder[r, ka, a] & ef =
-        ProcessBuilder(MonadLib/Builder.liftGetter(f))
+    def liftSetterResult(f: Interop/Lang.ProcessBuilder[r] -> Result[Interop/Lang.ProcessBuilder[r], err] \ ef): ProcessBuilder[r, ka, Unit] \ ef with ToString[err] =
+        ProcessBuilder(MonadLib/Builder.liftSetterResult(f))
+
+    // def liftGetter(f: Interop/Lang.ProcessBuilder[r] -> a \ ef): ProcessBuilder[r, ka, a] \ ef =
+    //     ProcessBuilder(MonadLib/Builder.liftGetter(f))
+
+    def liftGetterResult(f: Interop/Lang.ProcessBuilder[r] -> Result[a, err] \ ef): ProcessBuilder[r, ka, a] \ ef with ToString[err] =
+        ProcessBuilder(MonadLib/Builder.liftGetterResult(f))
 
     ///
     /// Returns the result of applying `ma` to the initial state `s`.
     ///
     def runBuilder(r: Region[r], 
                         ma: ProcessBuilder[r, a, a], 
-                        s: ##java.lang.ProcessBuilder): Result[a, String] & r = 
+                        s: Interop/Lang.ProcessBuilder[r]): Result[a, String] & r = 
         MonadLib/Builder.runBuilder(r, getProcessBuilder(ma), s)
 
-    /// Must be Impure uses IO...
-    pub def start(r: Region[r], ma: ProcessBuilder[r, a, a]): Result[Process, String] \ { Write(r), Impure } = 
-        import new java.lang.ProcessBuilder(##java.util.List): ##java.lang.ProcessBuilder & r as newProcessBuilder;
-        import java.lang.ProcessBuilder.start(): ##java.lang.Process & Impure as start1;
-        try {
-            let strs = Interop/Collections/RawList.fromListViaArrayList(() as Region[r], Nil: List[String]);
-            let jbuilder = newProcessBuilder(Interop/Collections/RawList.getRawList(strs));
-            match runBuilder(r, ma, jbuilder) {
-                case Err(msg) => Err(msg)
-                case Ok(_)    => Ok(Process(start1(jbuilder)))
-            }
-        } catch {
-            case ex: ##java.lang.Exception => 
-                import java.lang.Throwable.getMessage(): String & r;
-                Err(getMessage(ex))
+
+    pub def start(r: Region[r], ma: ProcessBuilder[r, a, a]): Result[Process[r], String] \ { Write(r), IO } = 
+        // import new java.lang.ProcessBuilder(##java.util.List): ##java.lang.ProcessBuilder & r as newProcessBuilder;
+        // import java.lang.ProcessBuilder.start(): ##java.lang.Process & Impure as start1;
+        let state1 = Interop/Lang/ProcessBuilder.new(r, Nil) as \ { Write(r), IO };
+        match runBuilder(r, ma, state1) {
+            case Err(msg) => Err(msg)
+            case Ok(_)    => Interop/Lang/ProcessBuilder.start(state1) |> Result.map(Process)
         }
 
 
@@ -116,24 +117,19 @@ namespace Interop/System/ProcessBuilder {
 
 
     pub def command!(cmd: String, args: List[String]): ProcessBuilder[r, ka, Unit] \ Write(r) =
-        import java.lang.ProcessBuilder.command(##java.util.List): ##java.lang.ProcessBuilder & r;
-        let strs = Interop/Collections/RawList.fromListViaArrayList(() as Region[r], cmd :: args);
-        liftSetter(pb -> command(pb, Interop/Collections/RawList.getRawList(strs)))
+        liftSetter(Interop/Lang/ProcessBuilder.command!(cmd :: args))
 
 
-    pub def setDirectory!(p: FilePath): ProcessBuilder[r, ka, Unit] \ Write(r) = 
-        import java.lang.ProcessBuilder.directory(##java.io.File): ##java.lang.ProcessBuilder & r;
-        import new java.io.File(String): ##java.io.File & r as newFile;
-        let fn = pb -> {
-            let filename = ToString.toString(p);
-            let file1 = newFile(filename);
-            directory(pb, file1)
+    pub def setDirectory!(path: FilePath): ProcessBuilder[r, ka, Unit] \ Write(r) = 
+        use Result.flatMap;
+        let step = pb -> region r1 {
+            let* file1 = Basis/System/FilePath.toFile(r1, path);
+            Ok(Interop/Lang/ProcessBuilder.directory!(file1, pb))
         };
-        liftSetter(fn)
+        liftSetterResult(step)
+        
 
     pub def getDirectory(): ProcessBuilder[r, ka, FilePath] \ Write(r) = 
-        import java.lang.ProcessBuilder.directory(): ##java.io.File & r;
-        import java.io.File.toPath(): ##java.nio.file.Path & r;
-        liftGetter(pb -> directory(pb) |> toPath |> FilePath)
+        liftGetterResult(Interop/Lang/ProcessBuilder.getDirectory >> Basis/System/FilePath.fromFile)
 
 }
