@@ -42,7 +42,7 @@ namespace Basis/System/Process {
         Interop/Lang/Process.waitFor!(p1)
 
 
-    pub def getInput(cs: Charset, p: Process[r]): Result[String, String] & Impure =
+    pub def getInput(cs: Charset, p: Process[r]): Result[String, String] \ IO =
         use Result.flatMap;
         let Process(p1) = p;
         let Charset(cs1) = cs;
@@ -51,7 +51,7 @@ namespace Basis/System/Process {
         Ok(Interop/Lang/String.fromArrayWithCharset(cs1, bytes))
 
 
-    pub def getError(cs: Charset, p: Process[r]): Result[String, String] & Impure =        
+    pub def getError(cs: Charset, p: Process[r]): Result[String, String] \ IO =
         use Result.flatMap;
         let Process(p1) = p;
         let Charset(cs1) = cs;
@@ -68,7 +68,7 @@ namespace Basis/System/Process {
         }
 
     /// Return with an Exit Code
-    pub def processWithExitCode(args: ProcessArgs): Result[{exitCode :: Int32, processResponse :: String}, String] & Impure =
+    pub def processWithExitCode(args: ProcessArgs): Result[{exitCode :: Int32, processResponse :: String}, String] \ IO =
         use Result.flatMap;
         region r1 {
             let pb          = processBuilder(args.cmd, args.args);
@@ -80,7 +80,7 @@ namespace Basis/System/Process {
         }
 
 
-    pub def process(args: ProcessArgs): Result[{processResponse :: String}, String] & Impure =
+    pub def process(args: ProcessArgs): Result[{processResponse :: String}, String] \ IO =
         use Result.flatMap;
         region r1 {
             let pb          = processBuilder(args.cmd, args.args);

@@ -20,7 +20,7 @@ namespace Basis/System {
     pub enum ProcessBuilder[r: Region, ka: Type, a: Type](MonadLib.Builder[r, ka, Interop/Lang.ProcessBuilder[r], a])
 
     instance Functor[ProcessBuilder[r, ka]] {
-        pub def map(f: a -> b & ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef = 
+        pub def map(f: a -> b \ ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] \ ef = 
             Basis/System/ProcessBuilder.map(f, ma)
     }
 
@@ -28,12 +28,12 @@ namespace Basis/System {
         pub def point(x: a): ProcessBuilder[r, ka, a] =  
             Basis/System/ProcessBuilder.point(x)
 
-        pub def ap(mf: ProcessBuilder[r, ka, a -> b & ef], ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
+        pub def ap(mf: ProcessBuilder[r, ka, a -> b \ ef], ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] \ ef =
             Basis/System/ProcessBuilder.ap(mf, ma)
     }
 
     instance Monad[ProcessBuilder[r, ka]] {
-        pub def flatMap(f: a -> ProcessBuilder[r, ka, b] & ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
+        pub def flatMap(f: a -> ProcessBuilder[r, ka, b] \ ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] \ ef =
             Basis/System/ProcessBuilder.flatMap(f, ma)
     }
 
@@ -57,26 +57,16 @@ namespace Basis/System/ProcessBuilder {
         let ProcessBuilder(x1) = x;
         x1
 
-    /// ///
-    /// /// Returns the result of applying `ma` to the initial state `s`.
-    /// ///
-    /// def runBuilder(_: Region[r], ma: ProcessBuilder[r, a, a], 
-    ///                 s: ##java.lang.ProcessBuilder): Result[a, String] & r =
-    ///     let ProcessBuilder(f) = ma;
-    ///     let cont = a -> Ok(a) as & r;
-    ///     f(s, cont)
-
-
     pub def point(x: a): ProcessBuilder[r, ka, a] = ProcessBuilder(MonadLib/Builder.point(x))
 
-    pub def map(f: a -> b & ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
+    pub def map(f: a -> b \ ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] \ ef =
         ProcessBuilder(MonadLib/Builder.map(f, getProcessBuilder(ma)))
 
-    pub def ap(mf: ProcessBuilder[r, ka, a -> b & ef], ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
+    pub def ap(mf: ProcessBuilder[r, ka, a -> b \ ef], ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] \ ef =
         ProcessBuilder(MonadLib/Builder.ap(getProcessBuilder(mf), getProcessBuilder(ma)))
 
 
-    pub def flatMap(f: a -> ProcessBuilder[r, ka, b] & ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] & ef =
+    pub def flatMap(f: a -> ProcessBuilder[r, ka, b] \ ef, ma: ProcessBuilder[r, ka, a]): ProcessBuilder[r, ka, b] \ ef =
         ProcessBuilder(MonadLib/Builder.flatMap(f >> getProcessBuilder, getProcessBuilder(ma)))
 
     pub def throwError(msg: String): ProcessBuilder[r, ka, a] =
@@ -99,13 +89,11 @@ namespace Basis/System/ProcessBuilder {
     ///
     def runBuilder(r: Region[r], 
                         ma: ProcessBuilder[r, a, a], 
-                        s: Interop/Lang.ProcessBuilder[r]): Result[a, String] & r = 
+                        s: Interop/Lang.ProcessBuilder[r]): Result[a, String] \ r = 
         MonadLib/Builder.runBuilder(r, getProcessBuilder(ma), s)
 
 
     pub def start(r: Region[r], ma: ProcessBuilder[r, a, a]): Result[Process[r], String] \ { Write(r), IO } = 
-        // import new java.lang.ProcessBuilder(##java.util.List): ##java.lang.ProcessBuilder & r as newProcessBuilder;
-        // import java.lang.ProcessBuilder.start(): ##java.lang.Process & Impure as start1;
         let state1 = Interop/Lang/ProcessBuilder.new(r, Nil) as \ { Write(r), IO };
         match runBuilder(r, ma, state1) {
             case Err(msg) => Err(msg)

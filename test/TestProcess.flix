@@ -17,21 +17,21 @@
 namespace TestProcess {
 
     @test
-    def process01(): Unit & Impure =
+    def process01(): Unit \ IO =
         match Basis/System/Process.process({cmd = "java", args = "--version" :: Nil, charset = Basis/Text/Charset.utf_8()}) {
             case Err(msg) => println("Process Err: ${msg}")
             case Ok(ans)  => println("${ans.processResponse}")
         }
 
     @test
-    def process02(): Unit & Impure =
+    def process02(): Unit \ IO =
         match Basis/System/Process.process({cmd = "java", args = "--list-modules" :: Nil, charset = Basis/Text/Charset.utf_8()}) {
             case Err(msg) => println("Process Err: ${msg}")
             case Ok(ans)  => println("${ans.processResponse}")
         }
 
     @test
-    def process03(): Unit & Impure =
+    def process03(): Unit \ IO =
         match Basis/System/Process.process({cmd = "java", args = "--BAD_ARGUMENT" :: Nil, charset = Basis/Text/Charset.utf_8()}) {
             case Err(msg) => println("Process Err: ${msg}")
             case Ok(ans)  => println("${ans.processResponse}")
